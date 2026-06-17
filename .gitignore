@@ -1,0 +1,69 @@
+# Virtual Environment
+.venv/
+venv/
+env/
+
+# Environment Variables
+.env
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Build / Distribution
+build/
+dist/
+*.egg-info/
+
+# Logs
+*.log
+
+# IDE Files
+.vscode/
+.idea/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Data Files (do not push datasets)
+data/
+
+# Project Notes / Temporary Files
+FORME.txt
+
+# # Claude Project Memory
+# CLAUDE.md
+
+# Streamlit
+.streamlit/secrets.toml
+
+# SQLite Databases
+*.db
+*.sqlite3
+
+# Model Artifacts
+models/
+checkpoints/
+*.pth
+*.pt
+*.pkl
+*.joblib
+
+# Temporary Files
+tmp/
+temp/
+*.tmp
+
+# Mac/Linux hidden files
+*.swp
+*.swo
