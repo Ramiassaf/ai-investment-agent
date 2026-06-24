@@ -157,6 +157,21 @@ SUPPLY_DEMAND_METALS → supply_demand
 
 ---
 
+## Deployment (Render)
+
+The project is live on Render with two separate services, each built from its own Dockerfile:
+
+| Service | Dockerfile | Port | Start command |
+|---|---|---|---|
+| FastAPI API | `Dockerfile.api` | 8000 | `uvicorn app.main:app --host 0.0.0.0 --port 8000` |
+| Streamlit UI | `Dockerfile.ui` | 8501 | `streamlit run app/streamlit_app.py --server.address=0.0.0.0 --server.port=8501` |
+
+Both images copy `src/`, `app/`, and `data/` into `/app`. Environment variables (`OPENAI_API_KEY`, `OPENAI_MODEL`, `NEWSAPI_KEY`) must be set in the Render service dashboard — they are not baked into the image.
+
+`data/processed/articles.jsonl` is bundled into the image at build time (snapshot). To refresh articles on Render, the image must be rebuilt and redeployed.
+
+---
+
 ## Known architectural limitations
 
 1. `SCORE_THRESHOLD=2` hardcoded in `classify.py` — may need tuning as corpus grows.
