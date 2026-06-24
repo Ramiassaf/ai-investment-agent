@@ -35,8 +35,8 @@ Thumbs.db
 .coverage
 htmlcov/
 
-# Data Files (do not push datasets)
-data/
+# # Data Files (do not push datasets)
+# data/
 
 # Project Notes / Temporary Files
 FORME.txt
