@@ -3,9 +3,10 @@ import os
 from dotenv import load_dotenv
 from src.ingestion.rss_fetcher import fetch_rss_feed
 from src.ingestion.rss_to_record import entry_to_article_record
-from src.storage.article_store import save_articles_jsonl_dedup
+from src.storage.article_store import save_articles_jsonl_dedup, cleanup_old_articles
 from src.ingestion.fxstreet_metals_fetcher import fetch_fxstreet_metals_articles
 from src.ingestion.newsapi_fetcher import fetch_newsapi_articles
+
 
 
 load_dotenv()
@@ -66,6 +67,8 @@ def main():
 
     stats = save_articles_jsonl_dedup(DATA_PATH, all_new_records)
     print("Save stats:", stats)
+    cleanup_stats = cleanup_old_articles(DATA_PATH, keep_days=180)
+    print("Cleanup stats:", cleanup_stats)
 
 if __name__ == "__main__":
     main()

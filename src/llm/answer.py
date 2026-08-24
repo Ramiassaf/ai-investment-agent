@@ -10,48 +10,43 @@ from src.retrieval.semantic_retriever import (
 )
 from src.llm.client import generate_answer
 from src.llm.prompts import build_prompt
+from src.storage.article_store import get_current_utc_iso
+import time
+
+
+def _log_and_return(question, answer, gold_bias, silver_bias, start_time):
+    elapsed = time.time() - start_time
+    print(f"[USAGE] {get_current_utc_iso()} | question={question} | gold={gold_bias} | silver={silver_bias} | elapsed={elapsed:.2f}s")
+    return {
+        "question": question,
+        "answer": answer,
+        "gold_bias": gold_bias,
+        "silver_bias": silver_bias
+    }
 
 
 def answer_question(question: str, domain_articles=None, embeddings=None):
+    start = time.time()
 
-    # if not provided, compute fresh (FastAPI path)
     if domain_articles is None or embeddings is None:
         articles = load_articles_jsonl("data/processed/articles.jsonl")
         if not articles:
-            return {
-                "question": question,
-                "answer": "No articles found. Run refresh_news.py first.",
-                "gold_bias": "unclear",
-                "silver_bias": "unclear"
-            }
+            return _log_and_return(question, "No articles found. Run refresh_news.py first.", "unclear", "unclear", start)
+
         recent_articles = filter_by_recency(articles, days=30)
         if not recent_articles:
-            return {
-                "question": question,
-                "answer": "No recent articles found (last 30 days).",
-                "gold_bias": "unclear",
-                "silver_bias": "unclear"
-            }
+            return _log_and_return(question, "No recent articles found (last 30 days).", "unclear", "unclear", start)
+
         domain_articles, _ = filter_domain_relevant_articles(recent_articles)
         if not domain_articles:
-            return {
-                "question": question,
-                "answer": "No domain-relevant articles found.",
-                "gold_bias": "unclear",
-                "silver_bias": "unclear"
-            }
+            return _log_and_return(question, "No domain-relevant articles found.", "unclear", "unclear", start)
+
         corpus = prepare_retrieval_corpus(domain_articles)
         embeddings = embed_texts(corpus)
 
-    # from here — same for both paths (Streamlit cached or FastAPI fresh)
     hits = semantic_search(question, domain_articles, embeddings, top_k=5)
     if not hits:
-        return {
-            "question": question,
-            "answer": "Semantic search returned no results.",
-            "gold_bias": "unclear",
-            "silver_bias": "unclear"
-        }
+        return _log_and_return(question, "Semantic search returned no results.", "unclear", "unclear", start)
 
     evidence = [make_evidence_card(a) for a in hits]
 
@@ -64,11 +59,4 @@ def answer_question(question: str, domain_articles=None, embeddings=None):
 
     response = generate_answer(system_prompt, user_prompt)
 
-    print("\nANSWER:")
-    print(response)
-    return {
-        "question": question,
-        "answer": response,
-        "gold_bias": gold_bias,
-        "silver_bias": silver_bias
-    }
+    return _log_and_return(question, response, gold_bias, silver_bias, start)

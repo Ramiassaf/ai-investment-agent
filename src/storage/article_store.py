@@ -49,7 +49,7 @@ def make_article_id(url: str | None, source: str, title: str , published_date: s
 # Save a list of ArticleRecord to a JSONL file
 def save_articles_jsonl(records: list[ArticleRecord],file_path: Path) -> None:
     file_path.parent.mkdir(parents=True,exist_ok=True)
-    with file_path.open("a", encoding="utf-8") as f:
+    with file_path.open("a", encoding="utf-8") as f: # a mode to append
         for r in records:
             f.write(json.dumps(r.to_dict(), ensure_ascii=False) + "\n")
 
@@ -77,6 +77,17 @@ def save_articles_jsonl_dedup(path: str | Path, new_articles: list[ArticleRecord
     }
 
 
+# Overwrite the entire JSONL file with the given records
+def overwrite_articles_jsonl(records: list[ArticleRecord], path: str | Path) -> None:
+    """
+    Overwrite the entire JSONL file with the given records.
+    Used by cleanup — replaces old content instead of appending.
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as f: # w mode to overwrite
+        for r in records:
+            f.write(json.dumps(r.to_dict(), ensure_ascii=False) + "\n")
 
 # Load articles from a JSONL file, returning a list of ArticleRecord
 def load_articles_jsonl(path: str | Path)-> list[ArticleRecord]:
@@ -155,5 +166,21 @@ def filter_by_recency(articles: list[ArticleRecord], days: int = 7) -> list[Arti
     return fresh
 
 
+def cleanup_old_articles(path: str | Path, keep_days: int = 180) -> dict:
+    """
+    Remove articles older than keep_days from the JSONL file.
+    Returns stats about what was removed and what remains.
+    """
+    path = Path(path)
+    all_articles = load_articles_jsonl(path)
+    recent_articles = filter_by_recency(all_articles, days=keep_days)
+
+    overwrite_articles_jsonl(recent_articles, path)
+
+    return {
+        "total_before": len(all_articles),
+        "kept": len(recent_articles),
+        "removed": len(all_articles) - len(recent_articles),
+    }
 
 

@@ -1,0 +1,44 @@
+
+# The refresh.yml file defines a GitHub Actions workflow that automates the process of refreshing news data for the project. The workflow is triggered on a schedule (every 6 hours) and can also be manually triggered via the workflow_dispatch event.
+
+# the file follows these steps
+# 1. Get the code          
+# 2. Install Python
+# 3. Install packages
+# 4. Provide the keys
+# 5. Run the script
+
+
+
+
+name: Refresh News Data
+
+on:
+  schedule:
+    - cron: "0 */6 * * *" # Run every 6 hours
+  workflow_dispatch:
+
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4 # clone the repo
+
+      - uses: actions/setup-python@v5
+        with:
+           python-version: "3.11"
+      
+      - run: pip install -r requirements.txt
+
+      - run: python -m app.refresh_news
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          NEWSAPI_KEY: ${{ secrets.NEWSAPI_KEY }}
+
+      - run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add data/processed/articles.jsonl
+          git diff --staged --quiet || git commit -m "Auto-refresh articles"
+          git push  
