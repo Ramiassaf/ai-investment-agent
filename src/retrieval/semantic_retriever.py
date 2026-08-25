@@ -120,5 +120,5 @@ def semantic_search(
     scores.sort(key=lambda x: x[1], reverse=True) # Sort by score in descending order
     ranked_articles = [articles[idx] for idx, _ in scores] 
     unique_ranked_articles = deduplicate_articles_by_url(ranked_articles)
-    return unique_ranked_articles[:top_k]
+    return unique_ranked_articles[:top_k], scores[0][1]
        

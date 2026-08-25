@@ -35,6 +35,8 @@ answer_question("What is driving gold prices right now?")
 
 There is no automated test suite — tests in `app/manual_tests/` are standalone scripts run directly with Python.
 
+Ingestion also runs on a schedule via `.github/workflows/refresh.yml` (cron, every 6 hours, plus manual `workflow_dispatch`): it runs `python -m app.refresh_news` in CI and commits/pushes the updated `data/processed/articles.jsonl` back to the repo. `OPENAI_API_KEY` and `NEWSAPI_KEY` must be set as GitHub Actions secrets for this to work.
+
 ---
 
 ## Environment
@@ -85,7 +87,9 @@ answer_question(question, domain_articles=None, embeddings=None)
 
 `answer_question` accepts optional `domain_articles` and `embeddings`. When both are provided (Streamlit), it skips loading/filtering/embedding — those are cached via `@st.cache_resource` at app startup. When called without them (FastAPI, manual tests), it computes fresh each time.
 
-> **Note:** The FastAPI `AskRequest` accepts a `days` field but it is not currently forwarded into `answer_question` — recency is hardcoded to 30 days inside the function.
+> **Note:** The FastAPI `AskRequest` accepts a `days` field, and the Streamlit UI has a `days` selectbox, but neither is currently forwarded into `answer_question` — recency is hardcoded to 30 days inside the function (and again inside `load_and_embed_articles()` in Streamlit).
+
+> **Note:** `semantic_search()` returns `(hits, top_score)`. `answer_question` captures `top_score` and a module-level `SIMILARITY_THRESHOLD = 0.3` exists in `src/llm/answer.py`, but nothing currently filters on it — low-relevance top hits still flow through to the LLM.
 
 ---
 
@@ -168,7 +172,7 @@ The project is live on Render with two separate services, each built from its ow
 
 Both images copy `src/`, `app/`, and `data/` into `/app`. Environment variables (`OPENAI_API_KEY`, `OPENAI_MODEL`, `NEWSAPI_KEY`) must be set in the Render service dashboard — they are not baked into the image.
 
-`data/processed/articles.jsonl` is bundled into the image at build time (snapshot). To refresh articles on Render, the image must be rebuilt and redeployed.
+`data/processed/articles.jsonl` is bundled into the image at build time (snapshot). The GitHub Actions workflow keeps this file fresh in the repo (see Commands), but Render does not pick that up automatically — the image must be rebuilt and redeployed to serve newer articles, unless Render auto-deploy on push is separately configured for these services.
 
 ---
 
@@ -177,6 +181,7 @@ Both images copy `src/`, `app/`, and `data/` into `/app`. Environment variables 
 1. `SCORE_THRESHOLD=2` hardcoded in `classify.py` — may need tuning as corpus grows.
 2. NewsAPI free tier — limited daily calls, `pageSize=10` per query.
 3. Evidence card shows only top driver — multi-label classification is not yet reflected in evidence display.
-4. No scheduled ingestion — `refresh_news.py` must be run manually.
-5. `days` parameter accepted by FastAPI `/ask` but not passed through to `answer_question`.
+4. `days` parameter accepted by FastAPI `/ask` and by the Streamlit selectbox, but not passed through to `answer_question` — actual recency is always 30 days.
+5. `SIMILARITY_THRESHOLD` in `src/llm/answer.py` is defined but unused — low-similarity semantic search results are never filtered out before reaching the LLM.
+6. Scheduled ingestion (GitHub Actions, every 6h) refreshes `articles.jsonl` in the repo, but Render deployments still serve whatever snapshot was baked in at last image build — the two can drift out of sync.
 

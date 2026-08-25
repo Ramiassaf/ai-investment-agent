@@ -11,11 +11,20 @@ corpus = prepare_retrieval_corpus(domain_articles )
 embeddings = embed_texts(corpus)
 
 test_queries =[
+    # "Why is gold going higher?",
+    # "How do central banks affect gold?",
+    # "How do geopolitical tensions affect gold?",
+    # "Why would interest rates matter for silver?"
+   
     "Why is gold going higher?",
     "How do central banks affect gold?",
     "How do geopolitical tensions affect gold?",
-    "Why would interest rates matter for silver?"
+    "Why would interest rates matter for silver?",
+    "who win yesterday barca or real",
+    "what is the best pizza recipe",
+    "how do I learn guitar",
 ]
+
 
 
 for query in test_queries:
@@ -23,7 +32,7 @@ for query in test_queries:
     print(f"Query: {query}")
     print(f"\n{'='*60}")
     
-    results = semantic_search(
+    results, top_score = semantic_search(
         query = query,
         articles = domain_articles,
         embeddings = embeddings,
@@ -31,6 +40,7 @@ for query in test_queries:
     )
     print(f"Total recent articles: {len(recent_articles)}")
     print(f"Domain relevant articles: {len(domain_articles)}")
+    print(f"Top semantic score: {top_score:.4f}")
 
     for r in domain_debug[:5]:
         print(r["title"],"->", r["reason"],  r["matched_groups"])

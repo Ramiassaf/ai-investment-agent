@@ -13,6 +13,8 @@ from src.llm.prompts import build_prompt
 from src.storage.article_store import get_current_utc_iso
 import time
 
+SIMILARITY_THRESHOLD = 0.3
+
 
 def _log_and_return(question, answer, gold_bias, silver_bias, start_time):
     elapsed = time.time() - start_time
@@ -44,9 +46,19 @@ def answer_question(question: str, domain_articles=None, embeddings=None):
         corpus = prepare_retrieval_corpus(domain_articles)
         embeddings = embed_texts(corpus)
 
-    hits = semantic_search(question, domain_articles, embeddings, top_k=5)
+    hits, top_score = semantic_search(question, domain_articles, embeddings, top_k=5)
     if not hits:
         return _log_and_return(question, "Semantic search returned no results.", "unclear", "unclear", start)
+
+    if top_score < SIMILARITY_THRESHOLD:
+        return _log_and_return(
+            question,
+            "This question doesn't appear to be about gold or silver markets. "
+            "Try asking about price drivers, Fed policy, inflation, or geopolitical impacts on precious metals.",
+            "unclear",
+            "unclear",
+            start
+        )
 
     evidence = [make_evidence_card(a) for a in hits]
 
