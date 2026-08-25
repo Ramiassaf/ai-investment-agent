@@ -15,7 +15,7 @@ name: Refresh News Data
 
 on:
   schedule:
-    - cron: "0 */6 * * *" # Run every 6 hours
+    - cron: "0 0 * * *"     # once a day at midnight UTC 
   workflow_dispatch:
 
 permissions:
